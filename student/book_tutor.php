@@ -1,6 +1,7 @@
 <?php
 require_once '../includes/config.php';
 require_once '../includes/auth_check.php';
+require_once '../includes/notify_helper.php';
 requireRole('student'); // Only allow students to access this page
 
 $tutorProfileId = $_GET['tutor_id'] ?? ($_POST['tutor_id'] ?? null);
@@ -40,6 +41,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
   $insertStmt = $conn->prepare("INSERT INTO booking_requests (student_id, tutor_id, subject_id, preferred_date, preferred_time, message) VALUES (?, ?, ?, ?, ?, ?)");
 
   $insertStmt->execute([$_SESSION['user_id'], $tutorProfileId, $subjectId, $date, $time, $note]);
+
+  $tutorUserStmt = $conn->prepare("SELECT user_id FROM tutor_profiles WHERE id = ?");
+  $tutorUserStmt->execute([$tutorProfileId]);
+  $tutorUserId = $tutorUserStmt->fetch()['user_id'];
+  createNotification($conn, $tutorUserId, "You have a new booking request from " . $_SESSION['user_name']);
 
   $message = "Booking request sent successfully!";
   }
