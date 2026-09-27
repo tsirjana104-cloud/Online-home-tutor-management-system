@@ -1,6 +1,7 @@
 <?php
 require_once '../includes/config.php';
 require_once '../includes/auth_check.php';
+require_once '../includes/notify_helper.php';
 requireRole('tutor'); // Only allow tutors to access this page
 
 $userId = $_SESSION['user_id'];
@@ -29,6 +30,12 @@ if (isset($_GET['action']) && isset($_GET['booking_id'])) {
     // check tutor_id matches, so a tutor can't update someone else's booking by just guessing a booking_id in the URL
     $updateStmt = $conn->prepare("UPDATE booking_requests SET status = ? WHERE id = ? AND tutor_id = ?");
     $updateStmt->execute([$newStatus, $bookingId, $tutorProfile]);
+
+    $bookingInfoStmt = $conn->prepare("SELECT student_id FROM booking_requests WHERE id = ?");
+    $bookingInfoStmt->execute([$bookingId]);
+    $studentId = $bookingInfoStmt->fetch()['student_id'];
+
+    createNotification($conn, $studentId, "Your booking status was updated to: " . $newStatus);
   }
 
   header("Location: my_bookings.php"); // Redirect to avoid resubmission
